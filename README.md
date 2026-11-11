@@ -4,7 +4,7 @@ Tableau de bord sur les effectifs, le profil et les honoraires des professionnel
 
 C'est mon premier projet Power BI : il couvre toute la chaîne, de la préparation des fichiers bruts jusqu'au rapport.
 
-![vue d'ensemble](captures/vue_d'ensemble.png)
+![vue d'ensemble](captures/vue d'ensemble.png)
 ![Territoires](captures/Territoires.png)
 
 Le rapport complet est disponible en PDF : [rapport/rapport.pdf](rapport/rapport.pdf).
