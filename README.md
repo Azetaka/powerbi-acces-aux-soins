@@ -3,8 +3,7 @@
 Tableau de bord sur les effectifs, le profil et les honoraires des professionnels de santé libéraux en France, de 2016 à 2025, construit à partir des données ouvertes de l'Assurance Maladie.
 
 C'est mon premier projet Power BI : il couvre toute la chaîne, de la préparation des fichiers bruts jusqu'au rapport.
-
-![vue d'ensemble](captures/vue d'ensemble.png)
+![vue d'ensemble](captures/vueensemble.png)
 ![Territoires](captures/Territoires.png)
 
 Le rapport complet est disponible en PDF : [rapport/rapport.pdf](rapport/rapport.pdf).
