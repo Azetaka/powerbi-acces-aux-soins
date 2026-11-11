@@ -1,0 +1,147 @@
+// Mesures DAX du tableau de bord « Professionnels de santé libéraux »
+// Toutes les mesures sont rangées dans la table _Mesures.
+
+// ---------- Mesures de base ----------
+
+Effectif = SUM(F_Effectifs[effectif])
+
+Effectif (contrôle) = SUM(F_Densite[effectif])
+
+Honoraires totaux =
+SUM(F_Honoraires[hono_sans_depassement_totaux]) + SUM(F_Honoraires[depassements_totaux])
+
+Honoraires sans dépassement = SUM(F_Honoraires[hono_sans_depassement_totaux])
+
+Dépassements = SUM(F_Honoraires[depassements_totaux])
+
+// ---------- Évolutions sur un an ----------
+
+Effectif N-1 =
+VAR AnneeEnCours = MAX(D_Annee[annee])
+RETURN
+    CALCULATE([Effectif], D_Annee[annee] = AnneeEnCours - 1)
+
+Évolution effectif % = DIVIDE([Effectif] - [Effectif N-1], [Effectif N-1])
+
+Honoraires N-1 =
+VAR AnneeEnCours = MAX(D_Annee[annee])
+RETURN
+    CALCULATE([Honoraires totaux], D_Annee[annee] = AnneeEnCours - 1)
+
+Évolution honoraires % = DIVIDE([Honoraires totaux] - [Honoraires N-1], [Honoraires N-1])
+
+// ---------- Moyennes pondérées ----------
+
+Honoraires moyens par professionnel = DIVIDE([Honoraires totaux], [Effectif (contrôle)])
+
+Honoraires moyens N-1 =
+VAR AnneeEnCours = MAX(D_Annee[annee])
+RETURN
+    CALCULATE([Honoraires moyens par professionnel], D_Annee[annee] = AnneeEnCours - 1)
+
+Évolution honoraires moyens % =
+DIVIDE([Honoraires moyens par professionnel] - [Honoraires moyens N-1], [Honoraires moyens N-1])
+
+Taux de dépassement = DIVIDE([Dépassements], [Honoraires totaux])
+
+// ---------- Parts ----------
+
+Part du total = DIVIDE([Effectif], CALCULATE([Effectif], ALL(D_Profession)))
+
+Part des femmes =
+DIVIDE(
+    CALCULATE([Effectif], F_Effectifs[libelle_sexe] = "femmes"),
+    [Effectif]
+)
+
+Part des 60 ans et + =
+DIVIDE(
+    CALCULATE([Effectif], D_Age[tranche_large] = "60 ans et +"),
+    [Effectif]
+)
+
+Part des 60 ans et + N-1 =
+VAR a = MAX(D_Annee[annee])
+RETURN
+    CALCULATE([Part des 60 ans et +], D_Annee[annee] = a - 1)
+
+Évolution 60 ans % =
+DIVIDE([Part des 60 ans et +] - [Part des 60 ans et + N-1], [Part des 60 ans et + N-1])
+
+// ---------- Densité ----------
+
+// Population reconstituée à partir de la densité des infirmiers
+Population =
+SUMX(
+    VALUES(D_Departement[departement]),
+    CALCULATE(
+        DIVIDE(SUM(F_Densite[effectif]), SUM(F_Densite[densite])) * 100000,
+        D_Profession[profession_sante] = "Infirmiers"
+    )
+)
+
+Densité pondérée = DIVIDE([Effectif (contrôle)], [Population]) * 100000
+
+Densité N-1 =
+VAR AnneeEnCours = MAX(D_Annee[annee])
+RETURN
+    CALCULATE([Densité pondérée], D_Annee[annee] = AnneeEnCours - 1)
+
+Évolution densité = [Densité pondérée] - [Densité N-1]
+
+Écart max / min densité =
+VAR dmax = MAXX(VALUES(D_Departement[departement]), [Densité pondérée])
+VAR dmin = MINX(VALUES(D_Departement[departement]), [Densité pondérée])
+RETURN
+    DIVIDE(dmax, dmin)
+
+// ---------- Indices base 100 ----------
+
+Effectif base 100 =
+DIVIDE([Effectif], CALCULATE([Effectif], D_Annee[annee] = 2016)) * 100
+
+Honoraires base 100 =
+DIVIDE([Honoraires totaux], CALCULATE([Honoraires totaux], D_Annee[annee] = 2016)) * 100
+
+// ---------- Pyramide des âges ----------
+
+Effectif femmes = CALCULATE([Effectif], F_Effectifs[libelle_sexe] = "femmes")
+
+Effectif hommes = CALCULATE([Effectif], F_Effectifs[libelle_sexe] = "hommes")
+
+// Valeur négative pour tracer les barres des hommes vers la gauche
+Effectif hommes (pyramide) = - CALCULATE([Effectif], F_Effectifs[libelle_sexe] = "hommes")
+
+// ---------- Libellés d'évolution affichés dans les cartes ----------
+
+Libellé évolution effectif =
+VAR e = [Évolution effectif %]
+RETURN
+    IF(ISBLANK(e), BLANK(), IF(e >= 0, "▲ ", "▼ ") & FORMAT(ABS(e), "0.0 %") & " sur un an")
+
+Libellé évolution honoraires =
+VAR e = [Évolution honoraires %]
+RETURN
+    IF(ISBLANK(e), BLANK(), IF(e >= 0, "▲ ", "▼ ") & FORMAT(ABS(e), "0.0 %") & " sur un an")
+
+Libellé évolution honoraires moyens =
+VAR e = [Évolution honoraires moyens %]
+RETURN
+    IF(ISBLANK(e), BLANK(), IF(e >= 0, "▲ ", "▼ ") & FORMAT(ABS(e), "0.0 %") & " sur un an")
+
+Libellé évolution 60 ans =
+VAR e = [Évolution 60 ans %]
+RETURN
+    IF(ISBLANK(e), BLANK(), IF(e >= 0, "+ ", "- ") & FORMAT(ABS(e), "0.0 %") & " sur un an")
+
+// ---------- Colonnes calculées ----------
+
+// Table D_Departement : nom utilisé par la carte Azure Maps
+// Lieu =
+// VAR d = D_Departement[libelle_departement]
+// VAR nom = SWITCH(d,
+//     "Indre", "Département de l'Indre",
+//     "Loire", "Département de la Loire",
+//     "Lot", "Département du Lot",
+//     d)
+// RETURN nom & ", " & D_Departement[libelle_region] & ", France"
